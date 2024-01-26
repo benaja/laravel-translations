@@ -104,7 +104,7 @@ class ImportTranslationsCommand extends Command
     {
         foreach ($this->manager->getTranslations($locale) as $file => $translations) {
             foreach (Arr::dot($translations) as $key => $value) {
-                SyncPhrasesAction::execute($translation, $key, $value || '', $locale, $file);
+                SyncPhrasesAction::execute($translation, $key, $value ?? '', $locale, $file);
             }
         }
 
