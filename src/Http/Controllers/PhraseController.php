@@ -35,9 +35,11 @@ class PhraseController extends BaseController
         }
 
         if ($request->has('filter.status')) {
-            $phrases->where($request->input('filter.status') === 'translated'
-                ? fn (Builder $query) => $query->whereNotNull('value')
-                : fn (Builder $query) => $query->whereNull('value')
+            $phrases->where(
+                $request->input('filter.status') === 'translated'
+                ? fn(Builder $query) => $query->whereNotNull('value')->where('value', '!=', '')
+                : fn(Builder $query) => $query->where(fn($query) => $query
+                    ->whereNull('value')->orWhere('value', ''))
             );
         }
 

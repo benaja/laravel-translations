@@ -13,8 +13,7 @@ class TranslationsManager
 {
     public function __construct(
         protected Filesystem $filesystem
-    ) {
-    }
+    ) {}
 
     public function getLocales(): array
     {
@@ -58,7 +57,7 @@ class TranslationsManager
 
         collect($files)
             ->map(function ($file) use ($locale) {
-                return $locale.DIRECTORY_SEPARATOR.$file->getFilename();
+                return $locale . DIRECTORY_SEPARATOR . $file->getFilename();
             })
             ->when($this->filesystem->exists(lang_path($rootFileName)), function ($collection) use ($rootFileName) {
                 return $collection->prepend($rootFileName);
@@ -106,19 +105,19 @@ class TranslationsManager
 
             foreach ($phrasesTree as $locale => $groups) {
                 foreach ($groups as $file => $phrases) {
-                    $path = lang_path("$locale/$file");
+                    $path = lang_path($file);
 
                     if (! $this->filesystem->isDirectory(dirname($path))) {
                         $this->filesystem->makeDirectory(dirname($path), 0755, true);
                     }
 
                     if (! $this->filesystem->exists($path)) {
-                        $this->filesystem->put($path, "<?php\n\nreturn [\n\n]; ".PHP_EOL);
+                        $this->filesystem->put($path, "<?php\n\nreturn [\n\n]; " . PHP_EOL);
                     }
 
                     if ($this->filesystem->extension($path) == 'php') {
                         try {
-                            $this->filesystem->put($path, "<?php\n\nreturn ".VarExporter::export($phrases, VarExporter::TRAILING_COMMA_IN_ARRAY).';'.PHP_EOL);
+                            $this->filesystem->put($path, "<?php\n\nreturn " . VarExporter::export($phrases, VarExporter::TRAILING_COMMA_IN_ARRAY) . ';' . PHP_EOL);
                         } catch (ExportException $e) {
                             logger()->error($e->getMessage());
                         }

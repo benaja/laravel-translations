@@ -43,7 +43,7 @@ class Translation extends Model
     public function scopeWithProgress($query): void
     {
         $query->addSelect([
-            'progress' => Phrase::selectRaw('COUNT(CASE WHEN value IS NOT NULL THEN 1 END) / COUNT(*) * 100')
+            'progress' => Phrase::selectRaw('COUNT(CASE WHEN value IS NOT NULL AND value <> \'\' THEN 1 END) / COUNT(*) * 100')
                 ->whereColumn('ltu_phrases.translation_id', 'ltu_translations.id')
                 ->limit(1),
         ])->withCasts([

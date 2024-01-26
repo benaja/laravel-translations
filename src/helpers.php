@@ -2,19 +2,21 @@
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 use Outhebox\TranslationsUI\Models\Contributor;
 
 if (! function_exists('translationsUIAssets')) {
     function translationsUIAssets(): HtmlString
     {
-        $hot = __DIR__.'/../resources/dist/hot';
+        $hot = __DIR__ . '/../resources/dist/hot';
 
         $devServerIsRunning = file_exists($hot);
 
         if ($devServerIsRunning) {
             $viteServer = file_get_contents($hot);
 
-            return new HtmlString(<<<HTML
+            return new HtmlString(
+                <<<HTML
                 <script type="module" src="$viteServer/@vite/client"></script>
                 <script type="module" src="$viteServer/resources/scripts/app.ts"></script>
             HTML
@@ -24,7 +26,8 @@ if (! function_exists('translationsUIAssets')) {
         $manifestPath = public_path('vendor/translations-ui/manifest.json');
 
         if (! file_exists($manifestPath)) {
-            return new HtmlString(<<<'HTML'
+            return new HtmlString(
+                <<<'HTML'
                 <div>The manifest.json file could not be found.</div>
             HTML
             );
@@ -32,7 +35,8 @@ if (! function_exists('translationsUIAssets')) {
 
         $manifest = json_decode(file_get_contents($manifestPath), true);
 
-        return new HtmlString(<<<HTML
+        return new HtmlString(
+            <<<HTML
                 <script type="module" src="/vendor/translations-ui/{$manifest['resources/scripts/app.ts']['file']}"></script>
                 <link rel="stylesheet" href="/vendor/translations-ui/{$manifest['resources/scripts/app.ts']['css'][0]}">
             HTML
@@ -60,10 +64,24 @@ if (! function_exists('buildPhrasesTree')) {
 
         /** @var \Outhebox\TranslationsUI\Models\Phrase $phrase */
         foreach ($phrases as $phrase) {
+            if ($phrase->file->is_root) {
+                $fileName = $phrase->file->file_name;
+            } else {
+                $fileName = "{$locale}/{$phrase->file->file_name}";
+            }
+
+
+            $key = $phrase->key;
+
+            if (config('translations.include_file_in_key') && !$phrase->file->is_root) {
+                $key = Str::replaceStart($phrase->file->name . '.', '', $key);
+            }
+
+
             setArrayValue(
-                array: $tree[$locale][$phrase->file->file_name],
-                key: $phrase->key,
-                value: ! blank($phrase->value) ? $phrase->value : $phrase->source->value
+                array: $tree[$locale][$fileName],
+                key: $key,
+                value: ! blank($phrase->value) ? $phrase->value : null
             );
         }
 
@@ -81,9 +99,6 @@ if (! function_exists('setArrayValue')) {
         $keys = preg_split('/\.(?=[^.]*[^.])/', $key);
 
         foreach ($keys as $i => $key) {
-            if (blank($value)) {
-                dd($key, $value);
-            }
 
             if (count($keys) === 1) {
                 break;

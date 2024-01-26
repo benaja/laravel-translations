@@ -34,14 +34,14 @@ class ImportTranslationsCommand extends Command
         $this->importLanguages();
 
         if ($this->option('fresh') && $this->confirm('Are you sure you want to truncate all translations and phrases?')) {
-            $this->info('Truncating translations and phrases...'.PHP_EOL);
+            $this->info('Truncating translations and phrases...' . PHP_EOL);
 
             $this->truncateTables();
         }
 
         $translation = $this->createOrGetSourceLanguage();
 
-        $this->info('Importing translations...'.PHP_EOL);
+        $this->info('Importing translations...' . PHP_EOL);
 
         $this->withProgressBar($this->manager->getLocales(), function ($locale) use ($translation) {
             $this->syncTranslations($translation, $locale);
@@ -75,7 +75,7 @@ class ImportTranslationsCommand extends Command
         $language = Language::where('code', config('translations.source_language'))->first();
 
         if (! $language) {
-            $this->error('Language with code '.config('translations.source_language').' not found'.PHP_EOL);
+            $this->error('Language with code ' . config('translations.source_language') . ' not found' . PHP_EOL);
 
             exit;
         }
@@ -104,7 +104,7 @@ class ImportTranslationsCommand extends Command
     {
         foreach ($this->manager->getTranslations($locale) as $file => $translations) {
             foreach (Arr::dot($translations) as $key => $value) {
-                SyncPhrasesAction::execute($translation, $key, $value, $locale, $file);
+                SyncPhrasesAction::execute($translation, $key, $value || '', $locale, $file);
             }
         }
 
@@ -128,15 +128,21 @@ class ImportTranslationsCommand extends Command
 
         $source->phrases->each(function ($phrase) use ($translation, $locale) {
             if (! $translation->phrases()->where('key', $phrase->key)->first()) {
-                $fileName = $phrase->file->name.'.'.$phrase->file->extension;
+                $fileName = $phrase->file->name . '.' . $phrase->file->extension;
 
                 if ($phrase->file->name === config('translations.source_language')) {
-                    $fileName = Str::replaceStart(config('translations.source_language').'.', "{$locale}.", $fileName);
+                    $fileName = Str::replaceStart(config('translations.source_language') . '.', "{$locale}.", $fileName);
                 } else {
-                    $fileName = Str::replaceStart(config('translations.source_language').'/', "{$locale}/", $fileName);
+                    $fileName = Str::replaceStart(config('translations.source_language') . '/', "{$locale}/", $fileName);
                 }
 
-                SyncPhrasesAction::execute($phrase->translation, $phrase->key, '', $locale, $fileName);
+                $key = $phrase->key;
+
+                if (config('translations.include_file_in_key') && ! $phrase->file->is_root) {
+                    $key = Str::replaceStart($phrase->file->name . '.', '', $key);
+                }
+
+                SyncPhrasesAction::execute($phrase->translation, $key, '', $locale, $fileName);
             }
         });
     }
